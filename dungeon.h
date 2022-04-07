@@ -26,7 +26,7 @@ class dungeon_crawling : public system_handler
 				// obtain basic dungeon info 
 				fileload >> max_z;
 				fileload >> max_x;
-				fileload >> max_y;
+				fileload >> max_y;	
 				
 				// set up map storage
 				map = new char**[max_x];
@@ -64,6 +64,7 @@ class dungeon_crawling : public system_handler
 		// display dungeon 
 		void display() override
 		{
+			// set camera position for the dungeon
 			cameraX = SCREEN_WIDTH/2-(pY*20*scale)-(pX*20*scale);
 			cameraY = SCREEN_HEIGHT/2+(pX*10*scale)-(pY*10*scale);
 			
@@ -87,10 +88,6 @@ class dungeon_crawling : public system_handler
 					
 				}	
 			}	
-			main_game->displayText.display("X: "+to_string(pX),100,100);
-			main_game->displayText.display("Y: "+to_string(pY),100,160);
-			main_game->displayText.display("Z: "+to_string(pZ),100,220);
-			
 		}
 		
 		// input handling
@@ -138,7 +135,7 @@ class dungeon_crawling : public system_handler
 		int cameraY = 300;
 		
 		// scale of images
-		int scale = 1;
+		int scale = 2;
 		
 		// image of dungeon blocks
 		image brick;  
