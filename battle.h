@@ -52,16 +52,13 @@ class battle : public system_handler
 			menu = image("resources/sprites/battle_menu.png",g->renderer);
 			party_menu = image("resources/sprites/party_menu.png",g->renderer);
 			
-			enemies = new image("resources/sprites/Monster/007.png",g->renderer);
+			enemies = new image("resources/sprites/Monster/001.png",g->renderer);
 			numTypeEnemies = 1;
 			
 			endHeart = image("resources/sprites/heart.png",g->renderer);
 			
 			player_port = image("resources/sprites/player_portrait.png",g->renderer);
-			
-			for(int i=0;i<numTypeEnemies;i++)
-				enemies[i].scale = 3;
-			
+				
 			textArea.scale = 3;
 			border.scale = 2;
 			party_menu.scale = 2;
@@ -69,7 +66,7 @@ class battle : public system_handler
 			
 			texttimer.start();
 			
-			lines.push_back("Encountered a Stranjger!");
+			lines.push_back("Encountered a Trahoatic!");
 		}
 
 		// display battle 
@@ -80,7 +77,7 @@ class battle : public system_handler
 			area.render(main_game->renderer,75,100);
 			border.render(main_game->renderer,50,90);
 				
-			enemies[0].render(main_game->renderer,120,160);	
+			enemies[0].render(main_game->renderer,220,160);	
 			
 			for(int i=0;i<4;i++)
 			{
