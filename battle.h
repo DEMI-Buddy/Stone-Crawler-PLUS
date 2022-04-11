@@ -67,12 +67,26 @@ class battle : public system_handler
 			texttimer.start();
 			
 			lines.push_back("Encountered a Trahoatic!");
+			
+			loadIn = true;
 		}
 
 		// display battle 
 		void display() override
 		{
 			int x;
+			
+			if(loadIn || switchOut)
+			{
+				area.setAlpha(megaAlpha);
+				border.setAlpha(megaAlpha);
+				enemies[0].setAlpha(megaAlpha);
+				menu.setAlpha(megaAlpha);
+				combat_info.textColor.a = megaAlpha;
+				party_menu.setAlpha(megaAlpha);
+				player_port.setAlpha(megaAlpha);
+				textArea.setAlpha(megaAlpha);
+			}
 			
 			area.render(main_game->renderer,75,100);
 			border.render(main_game->renderer,50,90);
@@ -135,12 +149,25 @@ class battle : public system_handler
 				else
 					pointy+=1;
 			}
+			
+			if(loadIn && megaAlpha == 255)
+				loadIn = false;
+			else if(loadIn)
+				megaAlpha+=5;
+			else if(switchOut && megaAlpha == 0)
+			{
+				megaAlpha = 255;
+				switchOut = false;
+				loadIn = true;
+			}
+			else if(switchOut)
+				megaAlpha-=5;
 		}		
 	
 		// handle input/logic
 		void handler() override
 		{
-			if(finishedLine)
+			if(!loadIn && !switchOut && finishedLine)
 			{
 				switch(main_game->input.state)
 				{
@@ -180,6 +207,11 @@ class battle : public system_handler
 			// animation variables for movement of heart at the end of line 
 			double pointy = 0;
 			bool reverse = true;
+			
+			// for animation timing when loading in and switching out 
+			bool loadIn = false;
+			bool switchOut = false;
+			int megaAlpha = 0;
 		
 		//--------------text rendering variables--------------			
 			// for displaying info on what's happening in battle  
