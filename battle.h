@@ -29,21 +29,27 @@ class battle : public system_handler
 				currentPos++;
 			
 			// checks if text is done 
-			if(currentPos >= lines[currentScript].size() && currentScript == lines.size()-1)
+			if(currentPos >= lines[currentScript].size())
 			{
 				finishedLine = true;
 				texttimer.stop();
 			}
 			
+			if(currentScript == lines.size()-1)
+				inputGo = true;
+
 			combat_info.display(lines[currentScript].substr(0,currentPos),70,50);		
 		}
 		
+		// constructor
 		battle(game_handler * g)
 		{
 			main_game = g;
 			
+			// main text used 
 			combat_info = text(g->renderer,1);
 			
+			// set up image info needed
 			textArea = image("resources/sprites/battle_text_area.png",g->renderer);
 			 
 			border = image("resources/sprites/battle_border.png",g->renderer);
@@ -58,7 +64,17 @@ class battle : public system_handler
 			endHeart = image("resources/sprites/heart.png",g->renderer);
 			
 			player_port = image("resources/sprites/player_portrait.png",g->renderer);
-				
+			
+			for(int i=0;i<partySize-1;i++)
+			{
+				switch(i)
+				{
+					case 0:
+					sai_port = image("resources/sprites/saiden_portrait.png",g->renderer);
+					break;
+				}
+			}
+					
 			textArea.scale = 3;
 			border.scale = 2;
 			party_menu.scale = 2;
@@ -66,33 +82,16 @@ class battle : public system_handler
 			
 			texttimer.start();
 			
+			// first lines in combat
 			lines.push_back("Encountered a Trahoatic!");
+			lines.push_back("Player, it's your turn!");
 			
 			loadIn = true;
 		}
 
-		// display battle 
-		void display() override
+		// for displaying party/player options menu
+		void partyOption(int x)
 		{
-			int x;
-			
-			if(loadIn || switchOut)
-			{
-				area.setAlpha(megaAlpha);
-				border.setAlpha(megaAlpha);
-				enemies[0].setAlpha(megaAlpha);
-				menu.setAlpha(megaAlpha);
-				combat_info.textColor.a = megaAlpha;
-				party_menu.setAlpha(megaAlpha);
-				player_port.setAlpha(megaAlpha);
-				textArea.setAlpha(megaAlpha);
-			}
-			
-			area.render(main_game->renderer,75,100);
-			border.render(main_game->renderer,50,90);
-				
-			enemies[0].render(main_game->renderer,220,160);	
-			
 			for(int i=0;i<4;i++)
 			{
 				if(i==option)
@@ -115,22 +114,67 @@ class battle : public system_handler
 					case 3:
 					combat_info.display("Items",x+20,460+i*55);
 					break;
-					
 				}
 				
-			}
+			}	
+		}
+
+		// for handling enemy actions 
+		void enemyAI()
+		{
 			
-			for(int i=0;i<partySize;i++)
+		}
+	
+		// display battle 
+		void display() override
+		{
+			int x;
+			
+			// for loading in animation 
+			if(loadIn || switchOut)
 			{
-				party_menu.render(main_game->renderer,580,150+i*120);
-				if(i==0)
-					player_port.render(main_game->renderer,600,140);
-				
-				combat_info.display("HP:10/10",750,160);
-				combat_info.display("STAMINA:10",750,205);
-				combat_info.display("PLAYER",750,250);
+				area.setAlpha(megaAlpha);
+				border.setAlpha(megaAlpha);
+				enemies[0].setAlpha(megaAlpha);
+				menu.setAlpha(megaAlpha);
+				combat_info.textColor.a = megaAlpha;
+				party_menu.setAlpha(megaAlpha);
+				player_port.setAlpha(megaAlpha);
+				textArea.setAlpha(megaAlpha);
+				sai_port.setAlpha(megaAlpha);
+			}
+			
+			// main area/border
+			area.render(main_game->renderer,75,100);
+			border.render(main_game->renderer,50,90);
+			
+			// display enemy sprites 			
+			enemies[0].render(main_game->renderer,220,160);	
+			
+			// menu display 
+			partyOption(x);
+			
+			// party information
+			for(int i=partySize-1;i>=0;i--)
+			{
+				party_menu.render(main_game->renderer,580,150+i*150);
+				switch(i)
+				{
+					case 0:
+					player_port.render(main_game->renderer,600,140+i*150);
+					combat_info.display("PLAYER",750,250+i*150);	
+					break;
+					case 1:
+					sai_port.render(main_game->renderer,600,140+i*160);
+					combat_info.display("Saiden",750,250+i*150);
+					break;
+				}
+				combat_info.display("HP:10/10",750,160+i*150);
+				combat_info.display("STAMINA:10",750,205+i*150);
 			
 			}
+			
+			// text battle info 
 			textArea.render(main_game->renderer,20,25);
 			textInfo();
 			
@@ -167,7 +211,7 @@ class battle : public system_handler
 		// handle input/logic
 		void handler() override
 		{
-			if(!loadIn && !switchOut && finishedLine)
+			if(!loadIn && !switchOut && inputGo) // input for menus when all dialogue is done 
 			{
 				switch(main_game->input.state)
 				{
@@ -184,6 +228,18 @@ class battle : public system_handler
 					break;
 				}
 			}
+			else if(finishedLine) // input for dialogue 
+			{
+				switch(main_game->input.state)
+				{
+					case SELECT: // if the line is done, pressing enter/select goes to the next line 
+					currentScript++;
+					currentPos = 0;
+					finishedLine = false;
+					texttimer.start();
+					break;
+				}
+			}
 		}
 	private:
 		//--------------image rendering variables--------------
@@ -197,6 +253,8 @@ class battle : public system_handler
 			image menu;
 			image party_menu;
 			image player_port;
+			image sai_port;
+			
 			image border;
 			image area;
 			image endHeart;
@@ -232,9 +290,13 @@ class battle : public system_handler
 			// current line being read
 			int currentScript = 0;
 			
+			// is the line being read done?
 			bool finishedLine = false;
+			
+			// can the player input stuff now that the lines are done?
+			bool inputGo = false;
 		
 		//--------------testing/debugging variables--------------		
 			// the party size (for debugging)
-			int partySize = 1;
+			int partySize = 2;
 };
