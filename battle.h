@@ -145,11 +145,11 @@ class battle : public system_handler
 			partyOption(x);
 			
 			// party information
-			party_menu.render(main_game->renderer,580,150+i*150);
-			player_port.render(main_game->renderer,600,140+i*150);
-			combat_info.display("PLAYER",750,250+i*150);	
-			combat_info.display("HP:10/10",750,160+i*150);
-			combat_info.display("STAMINA:10",750,205+i*150);
+			party_menu.render(main_game->renderer,580,150); 
+			player_port.render(main_game->renderer,600,140);
+			combat_info.display("PLAYER",750,250);	
+			combat_info.display("HP:10/10",750,160);
+			combat_info.display("STAMINA:10",750,205);
 			
 			// text battle info 
 			textArea.render(main_game->renderer,20,25);
