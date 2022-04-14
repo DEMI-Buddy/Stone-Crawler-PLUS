@@ -8,3 +8,9 @@ For now this code is primarily for windows but in the future I'm looking to
 port it over to other systems obviously when I make more progress on development.
 
 This does not come with the resources (images, audio, etc.) used to fully compile the game.
+
+system.h - Main system/engine classes
+game_handler.h - Defines the function of the game handler object that runs the application
+battle.h - Battle system class
+dungeon.h - Dungeon system class
+title_screen.h - Handles title screen
