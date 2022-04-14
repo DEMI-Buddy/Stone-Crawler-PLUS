@@ -1,4 +1,6 @@
+#ifndef HANDLER
 #include "game_handler.h"
+#endif
 
 class title_screen : public system_handler
 {
@@ -76,6 +78,9 @@ class title_screen : public system_handler
 					if(option != 1)
 						option++;
 					break;
+					case SELECT:
+					endSystemHandler();
+					break;
 				}
 				angleSelect[option]+=3;
 				angleSelect[option]%=360;
@@ -83,11 +88,11 @@ class title_screen : public system_handler
 			}
 			
 		}
-	private:
 	
 		// option on the title screen
 		int option = 0;
 		
+	private:
 		// for spinning the current selected option
 		int angleSelect[2] = {0,0};
 		

@@ -175,7 +175,7 @@ class text
 			switch(type)
 			{
 				case 1:
-				font = TTF_OpenFont("resources/fonts/Dotty.ttf",START_SIZE);
+				font = TTF_OpenFont("resources/fonts/Dotty.ttf",32);
 				break;
 				default:
 				font = TTF_OpenFont("resources/fonts/chiaro.ttf",START_SIZE);

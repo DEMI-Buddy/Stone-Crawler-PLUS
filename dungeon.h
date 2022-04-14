@@ -1,4 +1,6 @@
+#ifndef HANDLER
 #include "game_handler.h"
+#endif
 
 class dungeon_crawling : public system_handler
 {
@@ -152,6 +154,9 @@ class dungeon_crawling : public system_handler
 					if((pY != max_y-1) && (map[pZ][pY+1][pX] != '0'))
 						pY++;
 					break;
+					case SELECT:
+					endSystemHandler();
+					break;
 				}
 				switch(map[pZ][pY][pX])
 				{
@@ -170,6 +175,7 @@ class dungeon_crawling : public system_handler
 				}
 			}
 		}
+	
 	private:
 		// variables used for loading in a new floor 
 		bool loadIn = false;

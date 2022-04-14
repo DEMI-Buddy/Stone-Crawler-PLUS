@@ -64,16 +64,6 @@ class battle : public system_handler
 			endHeart = image("resources/sprites/heart.png",g->renderer);
 			
 			player_port = image("resources/sprites/player_portrait.png",g->renderer);
-			
-			for(int i=0;i<partySize-1;i++)
-			{
-				switch(i)
-				{
-					case 0:
-					sai_port = image("resources/sprites/saiden_portrait.png",g->renderer);
-					break;
-				}
-			}
 					
 			textArea.scale = 3;
 			border.scale = 2;
@@ -151,28 +141,15 @@ class battle : public system_handler
 			// display enemy sprites 			
 			enemies[0].render(main_game->renderer,220,160);	
 			
-			// menu display 
+			// display for specific turn stuff  
 			partyOption(x);
 			
 			// party information
-			for(int i=partySize-1;i>=0;i--)
-			{
-				party_menu.render(main_game->renderer,580,150+i*150);
-				switch(i)
-				{
-					case 0:
-					player_port.render(main_game->renderer,600,140+i*150);
-					combat_info.display("PLAYER",750,250+i*150);	
-					break;
-					case 1:
-					sai_port.render(main_game->renderer,600,140+i*160);
-					combat_info.display("Saiden",750,250+i*150);
-					break;
-				}
-				combat_info.display("HP:10/10",750,160+i*150);
-				combat_info.display("STAMINA:10",750,205+i*150);
-			
-			}
+			party_menu.render(main_game->renderer,580,150+i*150);
+			player_port.render(main_game->renderer,600,140+i*150);
+			combat_info.display("PLAYER",750,250+i*150);	
+			combat_info.display("HP:10/10",750,160+i*150);
+			combat_info.display("STAMINA:10",750,205+i*150);
 			
 			// text battle info 
 			textArea.render(main_game->renderer,20,25);
