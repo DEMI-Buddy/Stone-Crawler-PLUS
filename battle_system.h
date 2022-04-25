@@ -12,7 +12,11 @@ enum menuStatus
 	FIGHT_OVER = -2,
 	NOT_TURN = -1,
 	SELECTION = 0,
-	SKILLS = 1
+	SKILLS = 1,
+	T_SKILLS = 4,
+	TALK = 2,
+	T_TALK = 5,
+	ITEMS = 3
 };
 
 class battle : public system_handler
@@ -53,7 +57,7 @@ class battle : public system_handler
 			if(currentScript == lines.size()-1 && finishedLine)
 				inputGo = true;
 
-			combat_info.display(lines[currentScript].substr(0,currentPos),70,50);		
+			combat_info.display(lines[currentScript].substr(0,currentPos),60,50);		
 		}
 		
 		// used for sorting the turn order 
@@ -96,9 +100,15 @@ class battle : public system_handler
 			// set up enemy information 
 			enemySide = new stats[4];
 			indivAlpha = new pair<bool, int>[4]; 
-			enemySide[0] = stats(g->renderer,STRANJER);
-			enemySide[0].name = "Stranjer";
-			numEnemies = 1;
+			enemySide[0] = stats(g->renderer,COBOL);
+			enemySide[0].name = "Cobol";
+			enemySide[1] = stats(g->renderer,STRANJER);
+			enemySide[1].name = "Stranjer";
+			
+			numEnemies = 2;
+			
+			cursor = image("resources/sprites/target.png",g->renderer);
+			cursor.scale = 4;
 			
 			// sprite values 
 			for(int i=0;i<numEnemies;i++)
@@ -111,7 +121,10 @@ class battle : public system_handler
 			loadIn = true;
 			
 			// first lines in combat
-			lines.push_back("Encountered a " + enemySide[0].name);
+			if(numEnemies > 1)
+				lines.push_back("Encountered a group of enemies!");
+			else
+				lines.push_back("Encountered a " + enemySide[0].name);
 			
 			// set up turn calculating 
 			turnOrder = vector<stats*>();
@@ -176,6 +189,8 @@ class battle : public system_handler
 				
 					menu.render(main_game->renderer,x,500+i*55);
 					combat_info.display(currentChar->abilities[i].name,x+20,510+i*55);	
+					
+					cursor.render(main_game->renderer,90+130*targ,150);
 				}	
 				break;				
 			}
@@ -216,7 +231,7 @@ class battle : public system_handler
 						indivAlpha[i].second-=5;
 					enemySide[i].sprite.setAlpha(indivAlpha[i].second);
 				}
-				enemySide[i].sprite.render(main_game->renderer,200+100*i,300);
+				enemySide[i].sprite.render(main_game->renderer,50+130*i,300);
 			}
 			
 			// party information
@@ -245,7 +260,7 @@ class battle : public system_handler
 			// cursor at the end of a finished line 
 			if(finishedLine)
 			{
-				endHeart.render(main_game->renderer,600,75+pointy);
+				endHeart.render(main_game->renderer,630,75+pointy);
 				
 				// end heart up and down animation 
 				if(pointy > 5)
@@ -268,6 +283,7 @@ class battle : public system_handler
 			{
 				megaAlpha = 255;
 				switchOut = false;
+				main_game->switchBackground(0);
 				endSystemHandler();
 			}
 			else if(switchOut)
@@ -296,30 +312,138 @@ class battle : public system_handler
 			// the current character in the turn order 
 			currentChar = turnOrder.back();
 			
-			if(startTurn && currentChar->isEnemy)// enemy turn
+			if(startTurn && currentChar->isEnemy)// start enemy turn
 			{
-				lines.push_back("It's " + currentChar->name + "'s turn.");
+				lines.push_back("It's the enemy " + currentChar->name + "'s turn.");
 				currentChar->stamina--;
 				startTurn = false;
 				endTurn = true;
 				currentSelection = NOT_TURN;
 			}
-			else if(startTurn)// player party character turn 
+			else if(startTurn)// start player party character turn   
 			{
 				lines.push_back("It's " + currentChar->name + "'s turn.");
 				startTurn = false;
 				endTurn = true;
 				currentSelection = SELECTION;
+				targ = 0;
 			}
-			
 		}
-	
-		// handle input/logic
-		void handler() override
+		
+		// handle player input on their turn 
+		void player_turn_handler()
 		{
 			// damage calculation
 			int damage;
 			
+			switch(currentSelection)
+			{
+				case FIGHT_OVER: // end combat 
+				if(main_game->input.state == SELECT && finishedLine && currentScript+1 == lines.size())
+					switchOut = true;
+				break;
+				
+				case SELECTION:// input for basic menu when all dialogue is done 
+				if(!loadIn && !switchOut && inputGo)
+				{
+					switch(main_game->input.state)
+					{
+						case DOWN:
+						if(option != 2)
+							option++;
+						break;
+						case UP:
+						if(option != 0)
+							option--;
+						break;
+						case SELECT:
+						currentSelection = static_cast<menuStatus>(option+1);
+						break;
+					}
+				}
+				break;
+				
+				case NOT_TURN:
+				if(main_game->input.state == SELECT) // press enter after reading dialogue on enemy turn 
+				{
+					turnOrder.pop_back();
+					startTurn = true;
+					
+					currentScript++;
+					currentPos = 0;
+					finishedLine = false;
+					texttimer.start();
+				
+				}
+				break;
+				
+				default:
+				if(enemySide[targ].health <= 0)
+				{
+					int x = 0;
+					while(enemySide[x].health <= 0)
+						x++;
+					targ = x;
+				}
+				switch(currentSelection)
+				{
+					case SKILLS:
+					switch(main_game->input.state)
+					{
+						// moving target cursor 
+						case LEFT: 
+						
+ 						if(targ == 0)
+							targ = numEnemies-1;
+						else
+							targ--;
+						
+						break;
+						case RIGHT:
+						targ++;
+						targ %=  numEnemies; 
+						break;
+						
+						case UP: // select skills
+						break;
+						case DOWN:
+						break;
+						
+						case SELECT:
+						damage = rand()%(currentChar->strength)+1;
+						lines.push_back(enemySide[targ].name + " took "+ to_string(damage)+ " damage!");
+						enemySide[targ].health -= damage;
+						
+						// if target is defeated, show it 
+						if(enemySide[targ].health <= 0)
+							indivAlpha[targ].first = true;
+					
+						// move to next turn and read the line of the command being done 
+						turnOrder.pop_back();
+						startTurn = true;
+					
+						currentScript++;
+						currentPos = 0;
+						finishedLine = false;
+						texttimer.start();
+					
+						break;
+						case CANCEL:
+						currentSelection = SELECTION;
+						break;
+					}
+				
+					break;
+					case TALK:
+					break;
+				}
+				break;
+			}
+		}
+		
+		// handle input/logic
+		void handler() override
+		{
 			// input for dialogue 
 			if(finishedLine && !(currentScript+1 == lines.size())) 
 			{
@@ -338,77 +462,41 @@ class battle : public system_handler
 				currentPos = lines[currentScript].size();
 				finishedLine = true;
 			}
-			else if(finishedLine)
+			else if(finishedLine) // if the line is finished and the player's turn is up 
+				player_turn_handler();
+			
+			// check if all enemies are gone or defeated 
+			bool over = false;
+			if(currentSelection != FIGHT_OVER)
 			{
-				if(main_game->input.state == SELECT && finishedLine && currentSelection == FIGHT_OVER) // end combat 
-					switchOut = true;
-				else if(currentSelection == SELECTION && (!loadIn && !switchOut && inputGo)) // input for basic menu when all dialogue is done 
+				over = true;
+				for(int i=0;i<numEnemies;i++)
 				{
-					switch(main_game->input.state)
-					{
-						case DOWN:
-						if(option != 2)
-							option++;
-						break;
-						case UP:
-						if(option != 0)
-							option--;
-						break;
-						case SELECT:
-						currentSelection = static_cast<menuStatus>(option+1);
-						break;
-					}
-				}
-				else if(currentSelection != SELECTION && currentSelection != NOT_TURN) // menu selection for other options 
-				{
-					switch(main_game->input.state)
-					{
-						case SELECT:
-						damage = rand()%(currentChar->strength)+1;
-						lines.push_back(enemySide[0].name + " took "+ to_string(damage)+ " damage!");
-						enemySide[0].health -= damage;
-						
-						if(enemySide[0].health <= 0)
-							indivAlpha[0].first = true;
-						
-						// move to next turn and read the line of the command being done 
-						turnOrder.pop_back();
-						startTurn = true;
-						
-						currentScript++;
-						currentPos = 0;
-						finishedLine = false;
-						texttimer.start();
-					
-						break;
-						case CANCEL:
-						currentSelection = SELECTION;
-						break;
-					}
-				}
-				else if(currentSelection == NOT_TURN && main_game->input.state == SELECT) // press enter after reading dialogue on enemy turn 
-				{
-					turnOrder.pop_back();
-					startTurn = true;
-						
-					currentScript++;
-					currentPos = 0;
-					finishedLine = false;
-					texttimer.start();
-					
-				}
+					if(enemySide[i].health > 0)
+						over = false;	
+				}			
+				if(over)
+					currentSelection = FIGHT_OVER;
 			}
 			
 			// checks if the fight is over 
-			if(currentSelection != FIGHT_OVER && !switchOut && enemySide[0].health <= 0)
+			if(over && !switchOut)
 			{
 				startTurn = false;
 				endTurn = false;
-				lines.push_back("You defeated the " + enemySide[0].name);
+				
+				if(numEnemies > 1)
+					lines.push_back("You defeated the enemies");
+				else
+					lines.push_back("You defeated the enemy");
+				
+				over = false;
 				currentSelection = FIGHT_OVER;
 			}
 			
-			turn_character_handler();
+			// makes sure the fight is over and then processes the next turn order
+			if(currentSelection != FIGHT_OVER)
+				turn_character_handler();
 		}
 	private:
 		//--------------battle operation variables--------------
@@ -422,6 +510,11 @@ class battle : public system_handler
 			// current character in the turn order
 			stats * currentChar;
 			
+			// target for commands/actions
+			stats * target;
+			int numTargets;
+			int targ;
+			
 			// handling menu selections
 			menuStatus currentSelection = NOT_TURN;
 			
@@ -434,6 +527,9 @@ class battle : public system_handler
 			image * enemies; 
 			// used for each enemy sprite's alpha 
 			pair<bool, int> * indivAlpha; 
+			
+			// image for target cursor
+			image cursor;
 			
 			// images used for UI
 			image textArea;
