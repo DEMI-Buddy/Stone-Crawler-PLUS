@@ -13,7 +13,9 @@ system.h - Main system/engine classes
 
 game_handler.h - Defines the function of the game handler object that runs the application
 
-battle.h - Battle system class
+battle_system.h - Battle system class
+
+models.h - data models used for characters and such
 
 dungeon.h - Dungeon system class
 
