@@ -179,10 +179,13 @@ class battle : public system_handler
 			
 			switch(currentSelection)
 			{
+				case TALK:
+				cursor.render(main_game->renderer,90+130*targ,150);
+				break;
 				case SKILLS:
 				for(int i=0;i<currentChar->numMoves;i++)
 				{
-					if(i==option)
+					if(i==bat_opt)
 						x = 300;
 					else
 						x = 350;
@@ -243,7 +246,7 @@ class battle : public system_handler
 					x=595;
 				
 				party_menu.render(main_game->renderer,x,120+150*i); 
-				party[i].portraitDisplay(main_game->renderer,x+10,125+150*i);
+				party[i].portraitDisplay(main_game->renderer,x+10,125+150*i,loadIn || switchOut);
 				combat_info.display(party[i].name,x+150,220+150*i);	
 				combat_info.display("HP:" + to_string(party[i].health)+"/"+to_string(party[i].maxHealth),x+145,130+150*i);
 				combat_info.display("STAMINA:" + to_string(party[i].stamina)+"/"+to_string(party[i].maxStamina),x+145,175+150*i);
@@ -293,6 +296,14 @@ class battle : public system_handler
 		// for handling character turn operations 
 		void turn_character_handler()
 		{
+			// checks if a character's turn ended
+			if(endTurn)
+			{
+				endTurn = false;
+				turnOrder.pop_back();
+				startTurn = true;	
+			}
+			
 			if(turnOrder.size() == 0) // sets new turn order if all turns are done 
 			{
 				for(int i=0;i<numParty;i++)
@@ -312,21 +323,28 @@ class battle : public system_handler
 			// the current character in the turn order 
 			currentChar = turnOrder.back();
 			
+			
+			if(currentChar->health <= 0)
+			{
+				endTurn = true;
+				startTurn = false;
+			}
+			
 			if(startTurn && currentChar->isEnemy)// start enemy turn
 			{
 				lines.push_back("It's the enemy " + currentChar->name + "'s turn.");
 				currentChar->stamina--;
 				startTurn = false;
-				endTurn = true;
 				currentSelection = NOT_TURN;
 			}
 			else if(startTurn)// start player party character turn   
 			{
 				lines.push_back("It's " + currentChar->name + "'s turn.");
 				startTurn = false;
-				endTurn = true;
 				currentSelection = SELECTION;
 				targ = 0;
+				bat_opt = 0;
+				option = 0;
 			}
 		}
 		
@@ -363,17 +381,15 @@ class battle : public system_handler
 				}
 				break;
 				
-				case NOT_TURN:
-				if(main_game->input.state == SELECT) // press enter after reading dialogue on enemy turn 
+				case NOT_TURN: // press enter after reading dialogue on enemy turn 
+				if(main_game->input.state == SELECT) 
 				{
-					turnOrder.pop_back();
-					startTurn = true;
-					
 					currentScript++;
 					currentPos = 0;
 					finishedLine = false;
 					texttimer.start();
-				
+					
+					endTurn = true;
 				}
 				break;
 				
@@ -405,8 +421,13 @@ class battle : public system_handler
 						break;
 						
 						case UP: // select skills
+						if(bat_opt != 0)
+							bat_opt--;
 						break;
 						case DOWN:
+						if(bat_opt != currentChar->numMoves)
+							bat_opt++;
+						
 						break;
 						
 						case SELECT:
@@ -418,10 +439,9 @@ class battle : public system_handler
 						if(enemySide[targ].health <= 0)
 							indivAlpha[targ].first = true;
 					
+						endTurn = true;
+						
 						// move to next turn and read the line of the command being done 
-						turnOrder.pop_back();
-						startTurn = true;
-					
 						currentScript++;
 						currentPos = 0;
 						finishedLine = false;
@@ -435,6 +455,41 @@ class battle : public system_handler
 				
 					break;
 					case TALK:
+					switch(main_game->input.state)
+					{
+						// moving target cursor 
+						case LEFT: 
+						
+ 						if(targ == 0)
+							targ = numEnemies-1;
+						else
+							targ--;
+						
+						break;
+						case RIGHT:
+						targ++;
+						targ %=  numEnemies; 
+						break;
+						
+						case UP: // select skills
+						break;
+						case DOWN:
+						break;
+						
+						case SELECT:
+						party[numParty] = enemySide[targ];
+						party[numParty].isEnemy = false;
+						numParty++;
+		
+						enemySide[targ].health = 0;
+						indivAlpha[targ].first = true;
+						
+						endTurn = true;
+						break;
+						case CANCEL:
+						currentSelection = SELECTION;
+						break;
+					}
 					break;
 				}
 				break;
@@ -472,7 +527,7 @@ class battle : public system_handler
 				over = true;
 				for(int i=0;i<numEnemies;i++)
 				{
-					if(enemySide[i].health > 0)
+					if(indivAlpha[i].first == false)
 						over = false;	
 				}			
 				if(over)
@@ -543,6 +598,10 @@ class battle : public system_handler
 		
 			// the option the player selects for combat 
 			int option = 0;
+			
+			// the move option the player selects
+			int bat_opt = 0;
+			
 		
 			// animation variables for movement of heart at the end of line 
 			double pointy = 0;

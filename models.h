@@ -57,7 +57,7 @@ class stats
 				maxHealth = rand()%5+5;
 				maxStamina = rand()%5+5;
 			
-				maxStr = rand()%5+1;
+				maxStr = rand()%5+10;
 				maxDef = rand()%5+1;
 				maxAgil = rand()%5+1;
 			
@@ -81,7 +81,7 @@ class stats
 				break;
 				
 				case COBOL:
-				maxHealth = rand()%10+5;
+				maxHealth = rand()%1+1;
 				maxStamina = rand()%7+5;
 			
 				maxStr = rand()%3+1;
@@ -93,10 +93,10 @@ class stats
 			
 				strength = rand()%maxStr+1;
 				defense = rand()%maxDef+1;
-				agility = rand()%maxAgil+1;
+				agility = rand()%maxAgil+5;
 				
-				portCoords[0] = 103;
-				portCoords[1] = 63;
+				portCoords[0] = 20;
+				portCoords[1] = 33;
 				sprite = image("resources/sprites/Monster/Cobol.png",g);
 				
 				abilities[0] = {SLASH, "Slash"};
@@ -191,8 +191,8 @@ class stats
 				defense = rand()%maxDef+1;
 				agility = rand()%maxAgil+1;
 				
-				portCoords[0] = 123;
-				portCoords[1] = 63;
+				portCoords[0] = 0;
+				portCoords[1] = 0;
 				sprite = image("resources/sprites/Monster/stranjer.png",g);
 				
 				abilities[0] = {SPELL, "Spirit"};
@@ -208,8 +208,10 @@ class stats
 		}
 		
 		// party portrait display 
-		void portraitDisplay(SDL_Renderer * g, int x, int y)
+		void portraitDisplay(SDL_Renderer * g, int x, int y,bool bye = false)
 		{
+			if(!bye)
+				sprite.setAlpha(255);
 			SDL_Rect port = {portCoords[0],portCoords[1],130,130};
 			sprite.render(g,x,y,&port);
 		}
