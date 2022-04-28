@@ -145,11 +145,17 @@ class battle : public system_handler
 			// sort initial turn order 
 			sort(turnOrder.begin(),turnOrder.end(),turn_order());
 			
-			// debug starting turn order 
+			/* debug starting turn order 
 			for(int i=0;i<turnOrder.size();i++)
-			{ 
-				cout << "\n" << i << ":" << turnOrder[i]->name << " TURN MATH:" << turnOrder[i]->stamina*turnOrder[i]->agility + turnOrder[i]->health;;
-			}
+			{
+				cout << "\n";
+				if(!turnOrder[i]->isEnemy)
+					cout << "P ";
+				else
+					cout << "  ";
+				cout << i << ":" << turnOrder[i]->name << " TURN MATH:" << turnOrder[i]->stamina*turnOrder[i]->agility + turnOrder[i]->health;;
+			}*/
+			cout << "\n\nBATTLE";
 		}
 
 		// for displaying party/player options menu
@@ -277,6 +283,9 @@ class battle : public system_handler
 					pointy+=1;
 			}
 			
+			if(auto_bat)
+				main_game->displayText.display("AUTO",600,10);
+			
 			// loading in and switching out battle system animatino 
 			if(loadIn && megaAlpha == 255)
 				loadIn = false;
@@ -286,7 +295,6 @@ class battle : public system_handler
 			{
 				megaAlpha = 255;
 				switchOut = false;
-				main_game->switchBackground(0);
 				endSystemHandler();
 			}
 			else if(switchOut)
@@ -299,12 +307,44 @@ class battle : public system_handler
 			// checks if a character's turn ended
 			if(endTurn)
 			{
+				// update health values
+				if(currentChar->isEnemy)
+					party[0].health -=calcDam;
+				
+				calcDam = 0;
 				endTurn = false;
 				turnOrder.pop_back();
 				startTurn = true;	
 			}
 			
-			if(turnOrder.size() == 0) // sets new turn order if all turns are done 
+			// check if all enemies are gone or defeated 
+			bool over = false;
+			if(currentSelection != FIGHT_OVER)
+			{
+				over = true;
+				for(int i=0;i<numParty;i++)
+				{
+					if(party[i].health > 0)
+						over = false;	
+				}			
+				if(over)
+					currentSelection = FIGHT_OVER;
+			}
+		
+			// game over
+			if(over && !switchOut)
+			{
+				startTurn = false;
+				endTurn = false;
+				
+				lines.push_back("You were defeated!");
+				cout << "\nDEFEAT";
+				
+				over = false;
+				currentSelection = FIGHT_OVER;
+			
+			}
+			else if(turnOrder.size() == 0) // sets new turn order if all turns are done 
 			{
 				for(int i=0;i<numParty;i++)
 					turnOrder.push_back(&party[i]);
@@ -314,28 +354,44 @@ class battle : public system_handler
 			
 				sort(turnOrder.begin(),turnOrder.end(),turn_order());
 				
-				// debug view of turn order 
+				/* debug view of turn order 
 				cout << "\n\n";
 				for(int i=0;i<turnOrder.size();i++)
-					cout << "\n" << i << ":" << turnOrder[i]->name << " TURN MATH:" << turnOrder[i]->stamina*turnOrder[i]->agility + turnOrder[i]->health;;
+				{
+					cout << "\n";
+					if(!turnOrder[i]->isEnemy)
+						cout << "P ";
+					else
+						cout << "  ";
+					cout << i << ":" << turnOrder[i]->name << " TURN MATH:" << turnOrder[i]->stamina*turnOrder[i]->agility + turnOrder[i]->health;;
+				}*/
 			}
 			
 			// the current character in the turn order 
 			currentChar = turnOrder.back();
 			
-			
+			// skips turn if the current turn character is defeated 
 			if(currentChar->health <= 0)
 			{
 				endTurn = true;
 				startTurn = false;
 			}
 			
-			if(startTurn && currentChar->isEnemy)// start enemy turn
-			{
+			// start enemy turn
+			if(startTurn && currentChar->isEnemy)
+			{ 
 				lines.push_back("It's the enemy " + currentChar->name + "'s turn.");
 				currentChar->stamina--;
 				startTurn = false;
 				currentSelection = NOT_TURN;
+				
+				// enemy AI actions 
+				lines.push_back(currentChar->name + " did stuff!");
+				
+				calcDam = rand()%(currentChar->strength)+1;
+				cout << "\n" << currentChar->name << " ATTACKS FOR DAMAGE: " << calcDam;
+				lines.push_back(party[0].name + " took "+ to_string(calcDam)+ " damage!");
+				
 			}
 			else if(startTurn)// start player party character turn   
 			{
@@ -364,6 +420,10 @@ class battle : public system_handler
 				case SELECTION:// input for basic menu when all dialogue is done 
 				if(!loadIn && !switchOut && inputGo)
 				{
+					if(auto_bat)
+					{
+						currentSelection = SKILLS;
+					}
 					switch(main_game->input.state)
 					{
 						case DOWN:
@@ -377,12 +437,14 @@ class battle : public system_handler
 						case SELECT:
 						currentSelection = static_cast<menuStatus>(option+1);
 						break;
+						case CANCEL:
+						break;
 					}
 				}
 				break;
 				
-				case NOT_TURN: // press enter after reading dialogue on enemy turn 
-				if(main_game->input.state == SELECT) 
+				/*case NOT_TURN: // press enter after reading dialogue on enemy turn 
+				/*if(main_game->input.state == SELECT) 
 				{
 					currentScript++;
 					currentPos = 0;
@@ -391,7 +453,7 @@ class battle : public system_handler
 					
 					endTurn = true;
 				}
-				break;
+				break;*/
 				
 				default:
 				if(enemySide[targ].health <= 0)
@@ -404,55 +466,80 @@ class battle : public system_handler
 				switch(currentSelection)
 				{
 					case SKILLS:
-					switch(main_game->input.state)
+					if(auto_bat) // if auto battler is activated
 					{
-						// moving target cursor 
-						case LEFT: 
-						
- 						if(targ == 0)
-							targ = numEnemies-1;
-						else
-							targ--;
-						
-						break;
-						case RIGHT:
-						targ++;
-						targ %=  numEnemies; 
-						break;
-						
-						case UP: // select skills
-						if(bat_opt != 0)
-							bat_opt--;
-						break;
-						case DOWN:
-						if(bat_opt != currentChar->numMoves)
-							bat_opt++;
-						
-						break;
-						
-						case SELECT:
 						damage = rand()%(currentChar->strength)+1;
 						lines.push_back(enemySide[targ].name + " took "+ to_string(damage)+ " damage!");
 						enemySide[targ].health -= damage;
-						
+					
 						// if target is defeated, show it 
 						if(enemySide[targ].health <= 0)
 							indivAlpha[targ].first = true;
-					
-						endTurn = true;
 						
+						cout << "\n" << currentChar->name << " ATTACKS FOR DAMAGE: " << damage;
+						
+						endTurn = true;
+				
 						// move to next turn and read the line of the command being done 
 						currentScript++;
 						currentPos = 0;
 						finishedLine = false;
 						texttimer.start();
-					
-						break;
-						case CANCEL:
-						currentSelection = SELECTION;
-						break;
 					}
-				
+					else
+					{						
+						switch(main_game->input.state)
+						{
+							// moving target cursor 
+							case LEFT: 
+							
+							if(targ == 0)
+								targ = numEnemies-1;
+							else	
+								targ--;
+							
+							break;
+							case RIGHT:
+							targ++;
+							targ %=  numEnemies; 
+							break;
+						
+							case UP: // select skills
+							if(bat_opt != 0)
+								bat_opt--;
+							break;
+							case DOWN:
+							if(bat_opt != currentChar->numMoves)
+								bat_opt++;
+						
+							break;
+						
+							case SELECT:
+							damage = rand()%(currentChar->strength)+1;
+							lines.push_back(enemySide[targ].name + " took "+ to_string(damage)+ " damage!");
+							enemySide[targ].health -= damage;
+						
+							// if target is defeated, show it 
+							if(enemySide[targ].health <= 0)
+								indivAlpha[targ].first = true;
+						
+							cout << "\n" << currentChar->name << " RECRUITED: " << enemySide[targ].name;
+						
+							endTurn = true;
+						
+							// move to next turn and read the line of the command being done 
+							currentScript++;
+							currentPos = 0;
+							finishedLine = false;
+								texttimer.start();
+					
+							break;
+							case CANCEL:
+							currentSelection = SELECTION;
+							break;
+						}
+					}
+					
 					break;
 					case TALK:
 					switch(main_game->input.state)
@@ -500,16 +587,35 @@ class battle : public system_handler
 		void handler() override
 		{
 			// input for dialogue 
-			if(finishedLine && !(currentScript+1 == lines.size())) 
+			if(finishedLine && !(currentScript+1 == lines.size()))
 			{
-				switch(main_game->input.state)
+				if(auto_bat) // if auto battler is activated
 				{
-					case SELECT: // if the line is done, pressing enter/select goes to the next line 
 					currentScript++;
 					currentPos = 0;
 					finishedLine = false;
 					texttimer.start();
-					break;
+					
+					if(currentSelection == NOT_TURN && (currentScript+1 == lines.size()))
+						endTurn = true;						
+				}
+				else
+				{
+					switch(main_game->input.state)
+					{
+						case SELECT: // if the line is done, pressing enter/select goes to the next line 
+						currentScript++;
+						currentPos = 0;
+						finishedLine = false;
+						texttimer.start();
+						
+						if(currentSelection == NOT_TURN && (currentScript+1 == lines.size()))
+							endTurn = true;
+						break;
+						case CANCEL:
+						auto_bat = !auto_bat;
+						break;
+					}
 				}
 			}
 			else if(!finishedLine && main_game->input.state == SELECT) // complete line 
@@ -517,6 +623,8 @@ class battle : public system_handler
 				currentPos = lines[currentScript].size();
 				finishedLine = true;
 			}
+			else if(!finishedLine && main_game->input.state == CANCEL) // complete line 
+				auto_bat = !auto_bat;
 			else if(finishedLine) // if the line is finished and the player's turn is up 
 				player_turn_handler();
 			
@@ -544,6 +652,8 @@ class battle : public system_handler
 					lines.push_back("You defeated the enemies");
 				else
 					lines.push_back("You defeated the enemy");
+				
+				cout << "\nVICTORY";
 				
 				over = false;
 				currentSelection = FIGHT_OVER;
@@ -576,6 +686,9 @@ class battle : public system_handler
 			// booleans used for timing the start/end of a character turn 
 			bool startTurn = true;
 			bool endTurn = false;
+			
+			// used for updating damage after text is done
+			int calcDam = 0;
 		
 		//--------------image rendering variables--------------		
 			// hold images of enemy sprites
@@ -612,7 +725,10 @@ class battle : public system_handler
 			bool switchOut = false;
 			int megaAlpha = 0;
 		
-		//--------------text rendering variables--------------			
+		//--------------text rendering variables--------------		
+			// auto command in battles
+			bool auto_bat = false;
+			
 			// for displaying info on what's happening in battle  
 			text combat_info; 
 			
