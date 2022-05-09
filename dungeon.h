@@ -125,7 +125,7 @@ class dungeon_crawling : public system_handler
 					
 					for(int i=0;i<numEnemies;i++)
 					{
-						if(coords[i][0] == x && coords[i][1] == y )
+						if(movableEnemies[i] && coords[i][0] == x && coords[i][1] == y )
 							enemy.render(main_game->renderer,cameraX+(coords[i][1]*20*scale)+(coords[i][0]*20*scale)+20,cameraY-(coords[i][0]*10*scale)+(coords[i][1]*10*scale)-40);		
 					}
 						
@@ -181,14 +181,20 @@ class dungeon_crawling : public system_handler
 				loadIn = false;
 				newGame = false;
 				
-				// load enemies on the new floor 
+				// load enemies on the new floor and assign random spots 
 				numEnemies = rand()%10;
 				for(int i=0;i<numEnemies;i++)
 				{
-					movableEnemies[i] = true;
-	
-					coords[i][0] = (i+1);
-					coords[i][1] = 1;
+					movableEnemies[i] = false;
+					
+					while(movableEnemies[i] == false)
+					{
+						coords[i][0] = rand()%(max_x-2)+1;
+						coords[i][1] = rand()%(max_y-2)+1;
+						
+						if(map[pZ][coords[i][1]][coords[i][0]] != '0' && coords[i][0] != pX && coords[i][1] != pY)
+							movableEnemies[i] = true;
+					}
 				}
 			}
 			else if(loadIn)
@@ -218,6 +224,12 @@ class dungeon_crawling : public system_handler
 		{
 			if(!loadIn && !switchOut)
 			{
+				for(int i=0;i<numEnemies;i++)
+				{
+					if(coords[i][1] == pY && coords[i][0] == pX)
+						movableEnemies[i] = false;
+				}
+				
 				switch(main_game->input.state)
 				{
 					case UP:
@@ -287,7 +299,6 @@ class dungeon_crawling : public system_handler
 								coords[i][1]+=addY;
 							coords[i][0]+=addX;
 						}
-						
 					}
 					moveEnemyTimer.start();	
 				}
@@ -347,4 +358,3 @@ class dungeon_crawling : public system_handler
 		facing direction = SOUTH;
 	
 };
-
