@@ -1,4 +1,6 @@
+#ifndef HANDLER
 #include "game_handler.h"
+#endif
 #include "models.h"
 #include <algorithm> // vector sort function
 #include <utility>  // pair 
@@ -14,15 +16,120 @@ enum menuStatus
 	SELECTION = 0,
 	SKILLS = 1,
 	T_SKILLS = 4,
-	TALK = 2,
-	T_TALK = 5,
+	TALK = 5,
+	T_TALK = 2,
 	ITEMS = 3
 };
 
 class battle : public system_handler
 {
 	public:
+		
+		// used for sorting the turn order 
+		struct turn_order
+		{
+			bool operator()(const stats * a, const stats * b)
+			{ 
+				return (*a < *b);
+			}
+		};
+		
+	    //-------------------constructors-----------------------
 		battle(){}
+		
+		// main constructor with a specific game handler 
+		battle(game_handler * g)
+		{
+			main_game = g;
+			
+			// main text used 
+			combat_info = text(g->renderer,1);
+			
+			// set up image info needed
+			textArea = image("resources/sprites/battle/battle_text_area.png",g->renderer);
+			border = image("resources/sprites/battle/battle_border.png",g->renderer);
+			area = image("resources/sprites/battle/test_area.png",g->renderer);
+			menu = image("resources/sprites/battle/battle_menu.png",g->renderer);
+			party_menu = image("resources/sprites/battle/party_menu.png",g->renderer);
+			endHeart = image("resources/sprites/battle/heart.png",g->renderer);
+			player_port = image("resources/sprites/battle/player_portrait.png",g->renderer);			
+			cursor = image("resources/sprites/battle/target.png",g->renderer);
+			
+			textArea.scale = 3;
+			border.scale = 2;
+			party_menu.scale = 2;
+			area.scale = 2;
+			cursor.scale = 4;
+			
+			// set up enemy information
+			enemySide = new stats[4];
+			indivAlpha = new pair<bool, int>[4]; 
+			
+			switch(rand()%3+1)
+			{
+				case 1:	
+				enemySide[0] = stats(g->renderer,STRANJER);
+				enemySide[0].name = "Stranjer";
+				numEnemies = 1;
+				break;
+				case 2:
+				enemySide[0] = stats(g->renderer,STRANJER);
+				enemySide[0].name = "Stranjer";
+				enemySide[1] = stats(g->renderer,COBOL);
+				enemySide[1].name = "Cobol";
+				numEnemies = 2;
+				break;
+				case 3:
+				enemySide[0] = stats(g->renderer,COBOL);
+				enemySide[0].name = "Cobol";
+				enemySide[1] = stats(g->renderer,COBOL);
+				enemySide[1].name = "Cobol";
+				enemySide[2] = stats(g->renderer,COBOL);
+				enemySide[2].name = "Cobol";
+				numEnemies = 3;
+				break;
+			}
+			
+			// sprite values for enemies 
+			for(int i=0;i<numEnemies;i++)
+			{
+				indivAlpha[i].first = false;
+				indivAlpha[i].second = 255;
+			}
+			
+			// start load in animation
+			loadIn = true;
+			
+			// first lines in combat text 
+			if(numEnemies > 1)
+				lines.push_back("Encountered a group of enemies!");
+			else
+				lines.push_back("Encountered a " + enemySide[0].name);
+			
+			// set up turn calculating 
+			turnOrder = vector<stats*>();
+			
+			// add all party members and enemies to turn variable 
+			for(int i=0;i<numParty;i++)
+			{
+				party[i].isEnemy = false;
+				turnOrder.push_back(&party[i]);
+			}
+			for(int i=0;i<numEnemies;i++)
+			{
+				enemySide[i].isEnemy = true;
+				turnOrder.push_back(&enemySide[i]);
+			}
+			
+			// sort initial turn order 
+			sort(turnOrder.begin(),turnOrder.end(),turn_order());
+			
+			// start text 
+			texttimer.start();
+		}
+
+		
+		//--------------combat text handling--------------------
 		
 		// adding new description dialogue for battle text 
 		void actionLine(string command)
@@ -39,6 +146,8 @@ class battle : public system_handler
 			currentPos = 0;
 			finishedLine = false;
 		}
+		
+		//---------------display handling---------------------
 		
 		// generating/displaying battle text information
 		void textInfo()
@@ -58,106 +167,26 @@ class battle : public system_handler
 				inputGo = true;
 
 			combat_info.display(lines[currentScript].substr(0,currentPos),60,50);		
-		}
-		
-		// used for sorting the turn order 
-		struct turn_order
-		{
-			bool operator()(const stats * a, const stats * b)
-			{ 
-				return (*a < *b);
-			}
-		};
-		
-		// constructor
-		battle(game_handler * g)
-		{
-			main_game = g;
 			
-			// main text used 
-			combat_info = text(g->renderer,1);
 			
-			// set up image info needed
-			textArea = image("resources/sprites/battle_text_area.png",g->renderer);
-			 
-			border = image("resources/sprites/battle_border.png",g->renderer);
-			area = image("resources/sprites/test_area.png",g->renderer);
-			
-			menu = image("resources/sprites/battle_menu.png",g->renderer);
-			party_menu = image("resources/sprites/party_menu.png",g->renderer);
-			
-			endHeart = image("resources/sprites/heart.png",g->renderer);
-			
-			player_port = image("resources/sprites/player_portrait.png",g->renderer);
-					
-			textArea.scale = 3;
-			border.scale = 2;
-			party_menu.scale = 2;
-			area.scale = 2;
-			
-			texttimer.start();
-			
-			// set up enemy information 
-			enemySide = new stats[4];
-			indivAlpha = new pair<bool, int>[4]; 
-			enemySide[0] = stats(g->renderer,COBOL);
-			enemySide[0].name = "Cobol";
-			enemySide[1] = stats(g->renderer,STRANJER);
-			enemySide[1].name = "Stranjer";
-			
-			numEnemies = 2;
-			
-			cursor = image("resources/sprites/target.png",g->renderer);
-			cursor.scale = 4;
-			
-			// sprite values 
-			for(int i=0;i<numEnemies;i++)
+			// cursor at the end of a finished line 
+			if(finishedLine)
 			{
-				indivAlpha[i].first = false;
-				indivAlpha[i].second = 255;
-			}
+				endHeart.render(main_game->renderer,630,75+pointy);
+				
+				// end heart up and down animation 
+				if(pointy > 5)
+					reverse = true;
+				else if(pointy < -5)
+					reverse = false;
 			
-			// start load in animation
-			loadIn = true;
-			
-			// first lines in combat
-			if(numEnemies > 1)
-				lines.push_back("Encountered a group of enemies!");
-			else
-				lines.push_back("Encountered a " + enemySide[0].name);
-			
-			// set up turn calculating 
-			turnOrder = vector<stats*>();
-			
-			// add all party members and enemies to turn variable 
-			for(int i=0;i<numParty;i++)
-			{
-				party[i].isEnemy = false;
-				turnOrder.push_back(&party[i]);
-			}
-			
-			for(int i=0;i<numEnemies;i++)
-			{
-				enemySide[i].isEnemy = true;
-				turnOrder.push_back(&enemySide[i]);
-			}
-			
-			// sort initial turn order 
-			sort(turnOrder.begin(),turnOrder.end(),turn_order());
-			
-			/* debug starting turn order 
-			for(int i=0;i<turnOrder.size();i++)
-			{
-				cout << "\n";
-				if(!turnOrder[i]->isEnemy)
-					cout << "P ";
+				if(reverse)
+					pointy-=1;
 				else
-					cout << "  ";
-				cout << i << ":" << turnOrder[i]->name << " TURN MATH:" << turnOrder[i]->stamina*turnOrder[i]->agility + turnOrder[i]->health;;
-			}*/
-			cout << "\n\nBATTLE";
+					pointy+=1;
+			}
 		}
-
+		
 		// for displaying party/player options menu
 		void partyOption(int x)
 		{
@@ -185,27 +214,27 @@ class battle : public system_handler
 			
 			switch(currentSelection)
 			{
-				case TALK:
-				cursor.render(main_game->renderer,90+130*targ,150);
+				case T_TALK:
+				cursor.render(main_game->renderer,90+130*targ,150);		
 				break;
-				case SKILLS:
+			
+				case SKILLS: // picking skills 
 				for(int i=0;i<currentChar->numMoves;i++)
 				{
-					if(i==bat_opt)
-						x = 300;
-					else
-						x = 350;
-				
+					x = 350;		
+					if(i==bat_opt) // if the current option is this skill, move it left 
+						x -= 50;
+		
 					menu.render(main_game->renderer,x,500+i*55);
 					combat_info.display(currentChar->abilities[i].name,x+20,510+i*55);	
-					
-					cursor.render(main_game->renderer,90+130*targ,150);
 				}	
+				cursor.render(main_game->renderer,90+130*targ,150);				
+				
 				break;				
 			}
 		}
 		
-		// display battle 
+		// general display function 
 		void display() override
 		{
 			int x;
@@ -259,29 +288,12 @@ class battle : public system_handler
 			}
 			
 			// display for specific turn stuff  
-			if(finishedLine && (currentScript+1 == lines.size()) && currentSelection != FIGHT_OVER && currentSelection != NOT_TURN)
+			if(finishedLine && (currentScript+1 == lines.size()) && currentSelection != TALK && currentSelection != FIGHT_OVER && currentSelection != NOT_TURN)
 				partyOption(x);
 			
 			// text battle info 
 			textArea.render(main_game->renderer,20,5);
 			textInfo();
-			
-			// cursor at the end of a finished line 
-			if(finishedLine)
-			{
-				endHeart.render(main_game->renderer,630,75+pointy);
-				
-				// end heart up and down animation 
-				if(pointy > 5)
-					reverse = true;
-				else if(pointy < -5)
-					reverse = false;
-			
-				if(reverse)
-					pointy-=1;
-				else
-					pointy+=1;
-			}
 			
 			if(auto_bat)
 				main_game->displayText.display("AUTO",600,10);
@@ -291,7 +303,7 @@ class battle : public system_handler
 				loadIn = false;
 			else if(loadIn)
 				megaAlpha+=5;
-			else if(switchOut && megaAlpha == 0)
+			else if(switchOut && megaAlpha == 0) // if the screen fades out, end
 			{
 				megaAlpha = 255;
 				switchOut = false;
@@ -299,17 +311,40 @@ class battle : public system_handler
 			}
 			else if(switchOut)
 				megaAlpha-=5;
-		}		
-	
+		}
+		
+		//---------------logic handlers------------------------
+		
+		// for handling enemy AI
+		void enemyAI()
+		{
+			// select target 
+			targ = rand()%(numParty);
+			
+			if(party[targ].health <= 0)
+			{
+				int x = 0;
+				while(party[x].health <= 0)
+					x++;
+				targ = x;
+			}
+			
+			lines.push_back(currentChar->name + " did stuff!");
+			calcDam = rand()%(currentChar->strength)+1;
+			lines.push_back(party[targ].name + " took "+ to_string(calcDam)+ " damage!");		
+		}
+		
 		// for handling character turn operations 
 		void turn_character_handler()
 		{
 			// checks if a character's turn ended
 			if(endTurn)
 			{
+				Mix_PlayChannel(0,hit,0);
+					
 				// update health values
 				if(currentChar->isEnemy)
-					party[0].health -=calcDam;
+					party[targ].health -=calcDam;
 				
 				calcDam = 0;
 				endTurn = false;
@@ -338,7 +373,6 @@ class battle : public system_handler
 				endTurn = false;
 				
 				lines.push_back("You were defeated!");
-				cout << "\nDEFEAT";
 				
 				over = false;
 				currentSelection = FIGHT_OVER;
@@ -353,18 +387,6 @@ class battle : public system_handler
 					turnOrder.push_back(&enemySide[i]);
 			
 				sort(turnOrder.begin(),turnOrder.end(),turn_order());
-				
-				/* debug view of turn order 
-				cout << "\n\n";
-				for(int i=0;i<turnOrder.size();i++)
-				{
-					cout << "\n";
-					if(!turnOrder[i]->isEnemy)
-						cout << "P ";
-					else
-						cout << "  ";
-					cout << i << ":" << turnOrder[i]->name << " TURN MATH:" << turnOrder[i]->stamina*turnOrder[i]->agility + turnOrder[i]->health;;
-				}*/
 			}
 			
 			// the current character in the turn order 
@@ -386,12 +408,7 @@ class battle : public system_handler
 				currentSelection = NOT_TURN;
 				
 				// enemy AI actions 
-				lines.push_back(currentChar->name + " did stuff!");
-				
-				calcDam = rand()%(currentChar->strength)+1;
-				cout << "\n" << currentChar->name << " ATTACKS FOR DAMAGE: " << calcDam;
-				lines.push_back(party[0].name + " took "+ to_string(calcDam)+ " damage!");
-				
+				enemyAI();
 			}
 			else if(startTurn)// start player party character turn   
 			{
@@ -443,18 +460,6 @@ class battle : public system_handler
 				}
 				break;
 				
-				/*case NOT_TURN: // press enter after reading dialogue on enemy turn 
-				/*if(main_game->input.state == SELECT) 
-				{
-					currentScript++;
-					currentPos = 0;
-					finishedLine = false;
-					texttimer.start();
-					
-					endTurn = true;
-				}
-				break;*/
-				
 				default:
 				if(enemySide[targ].health <= 0)
 				{
@@ -468,15 +473,16 @@ class battle : public system_handler
 					case SKILLS:
 					if(auto_bat) // if auto battler is activated
 					{
+						Mix_PlayChannel(0,hit,0);
 						damage = rand()%(currentChar->strength)+1;
 						lines.push_back(enemySide[targ].name + " took "+ to_string(damage)+ " damage!");
 						enemySide[targ].health -= damage;
-					
+						
+						
+						
 						// if target is defeated, show it 
 						if(enemySide[targ].health <= 0)
 							indivAlpha[targ].first = true;
-						
-						cout << "\n" << currentChar->name << " ATTACKS FOR DAMAGE: " << damage;
 						
 						endTurn = true;
 				
@@ -515,6 +521,7 @@ class battle : public system_handler
 							break;
 						
 							case SELECT:
+							Mix_PlayChannel(0,hit,0);
 							damage = rand()%(currentChar->strength)+1;
 							lines.push_back(enemySide[targ].name + " took "+ to_string(damage)+ " damage!");
 							enemySide[targ].health -= damage;
@@ -522,8 +529,6 @@ class battle : public system_handler
 							// if target is defeated, show it 
 							if(enemySide[targ].health <= 0)
 								indivAlpha[targ].first = true;
-						
-							cout << "\n" << currentChar->name << " RECRUITED: " << enemySide[targ].name;
 						
 							endTurn = true;
 						
@@ -541,7 +546,7 @@ class battle : public system_handler
 					}
 					
 					break;
-					case TALK:
+					case T_TALK:
 					switch(main_game->input.state)
 					{
 						// moving target cursor 
@@ -564,6 +569,30 @@ class battle : public system_handler
 						break;
 						
 						case SELECT:
+						if(numParty == 4)
+						{
+							lines.push_back("You have no room in your party!");
+							
+						}
+						else
+						{
+							currentSelection = TALK;
+							lines.push_back("You invited " + enemySide[targ].name + " to join you.");
+							lines.push_back("They said yes!");
+							
+							main_game->switchBackground(0);
+						}
+						break;
+						case CANCEL:
+						currentSelection = SELECTION;
+						break;
+					}
+					break;
+					
+					case TALK:
+					switch(main_game->input.state)
+					{
+						case SELECT:
 						party[numParty] = enemySide[targ];
 						party[numParty].isEnemy = false;
 						numParty++;
@@ -572,9 +601,8 @@ class battle : public system_handler
 						indivAlpha[targ].first = true;
 						
 						endTurn = true;
-						break;
-						case CANCEL:
-						currentSelection = SELECTION;
+						
+						main_game->switchBackground(5);
 						break;
 					}
 					break;
@@ -608,6 +636,19 @@ class battle : public system_handler
 						currentPos = 0;
 						finishedLine = false;
 						texttimer.start();
+						
+						if(currentSelection == FIGHT_OVER && party[0].health > 0)
+						{
+							Mix_FadeOutMusic(0); // stop current music 
+							main_game->music =  Mix_LoadMUS( "resources/music/Tax Evasion.wav");
+							Mix_FadeInMusic(main_game->music, -1, 100); // fades into new music 
+						}
+						else if(currentSelection == FIGHT_OVER)
+						{
+							Mix_FadeOutMusic(0); // stop current music 
+							main_game->music =  Mix_LoadMUS( "resources/music/Game Over.wav");
+							Mix_PlayMusic(main_game->music, 1);
+						}
 						
 						if(currentSelection == NOT_TURN && (currentScript+1 == lines.size()))
 							endTurn = true;
@@ -653,8 +694,6 @@ class battle : public system_handler
 				else
 					lines.push_back("You defeated the enemy");
 				
-				cout << "\nVICTORY";
-				
 				over = false;
 				currentSelection = FIGHT_OVER;
 			}
@@ -663,6 +702,7 @@ class battle : public system_handler
 			if(currentSelection != FIGHT_OVER)
 				turn_character_handler();
 		}
+	
 	private:
 		//--------------battle operation variables--------------
 			// enemy stats
@@ -709,6 +749,8 @@ class battle : public system_handler
 			image area;
 			image endHeart;
 		
+			image talk_bubble;
+			
 			// the option the player selects for combat 
 			int option = 0;
 			
@@ -751,5 +793,8 @@ class battle : public system_handler
 			bool finishedLine = false;
 			
 			// can the player input stuff now that the lines are done?
-			bool inputGo = false;
+			bool inputGo = false;	
+		//--------------------misc------------------------
+			// damage sound effect 
+			Mix_Chunk * hit = Mix_LoadWAV("resources/music/sounds/attack_sound.wav"); 
 };

@@ -1,4 +1,6 @@
+#ifndef HANDLER
 #include "game_handler.h"
+#endif
 
 enum facing 
 {
@@ -24,7 +26,6 @@ class dungeon_crawling : public system_handler
 		{
 			// get dungeon file from memory
 			fstream fileload("resources/maps/" + filename + ".txt", ios_base::in);
-			fstream enemyload("resources/maps/" + filename + ".enemydat", ios_base::in);
 			string reader; 
 			
 			if(fileload.is_open())
@@ -32,14 +33,22 @@ class dungeon_crawling : public system_handler
 				// get the dungeon crawling system running 
 				main_game = g;
 			
-				// load images 
-				enemy = image("resources/sprites/test_enemy.png",g->renderer);
+				// party member info 
+				//numParty = 3;
+				for(int i=0;i<numParty-1;i++)
+				{
+					partFace[i] = SOUTH;
+					partCoords[i][0] = pX;
+					partCoords[i][1] = pY-(i+1);
+				}
 				
-				player = image("resources/sprites/kid.png",g->renderer);
-				b_player = image("resources/sprites/back_kid.png",g->renderer);
-				brick = image("resources/sprites/brick.png",g->renderer);
+				// load images 
+				enemy = image("resources/sprites/dungeon/test_enemy.png",g->renderer);
+				player = image("resources/sprites/dungeon/kid.png",g->renderer);
+				b_player = image("resources/sprites/dungeon/back_kid.png",g->renderer);
+				brick = image("resources/sprites/dungeon/brick.png",g->renderer);
 				brick.scale = scale;
-				//player.scale = scale;
+				textbackground = image("resources/sprites/dungeon/backoftext.png",g->renderer);
 				
 				// obtain basic dungeon info 
 				fileload >> max_z;
@@ -58,7 +67,8 @@ class dungeon_crawling : public system_handler
 					}
 				}
 				
-				for(int z=0;z<max_z;z++) // get map information stored into array 
+				// get map information stored into array 
+				for(int z=0;z<max_z;z++) 
 				{
 					for(int y=0;y<max_y;y++)
 					{
@@ -126,7 +136,7 @@ class dungeon_crawling : public system_handler
 					for(int i=0;i<numEnemies;i++)
 					{
 						if(movableEnemies[i] && coords[i][0] == x && coords[i][1] == y )
-							enemy.render(main_game->renderer,cameraX+(coords[i][1]*20*scale)+(coords[i][0]*20*scale)+20,cameraY-(coords[i][0]*10*scale)+(coords[i][1]*10*scale)-40);		
+							enemy.render(main_game->renderer,cameraX+(coords[i][1]*20*scale)+(coords[i][0]*20*scale)+30,cameraY-(coords[i][0]*10*scale)+(coords[i][1]*10*scale)-70);		
 					}
 						
 					if(pX == x && pY == y)
@@ -138,25 +148,25 @@ class dungeon_crawling : public system_handler
 							{
 								case NORTH:
 								b_player.flip = SDL_FLIP_HORIZONTAL;
-								b_player.render(main_game->renderer,cameraX+(pY*20*scale)+(pX*20*scale)+20,cameraY-(pX*10*scale)+(pY*10*scale)-40);
+								b_player.render(main_game->renderer,cameraX+(pY*20*scale)+(pX*20*scale)+30,cameraY-(pX*10*scale)+(pY*10*scale)-70);
 								break;
 								case EAST:
 								b_player.flip = SDL_FLIP_NONE;
-								b_player.render(main_game->renderer,cameraX+(pY*20*scale)+(pX*20*scale)+20,cameraY-(pX*10*scale)+(pY*10*scale)-40);
+								b_player.render(main_game->renderer,cameraX+(pY*20*scale)+(pX*20*scale)+30,cameraY-(pX*10*scale)+(pY*10*scale)-70);
 								break;
 								case WEST:
 								player.flip = SDL_FLIP_HORIZONTAL;
-								player.render(main_game->renderer,cameraX+(pY*20*scale)+(pX*20*scale)+20,cameraY-(pX*10*scale)+(pY*10*scale)-40);
+								player.render(main_game->renderer,cameraX+(pY*20*scale)+(pX*20*scale)+30,cameraY-(pX*10*scale)+(pY*10*scale)-70);
 								break;
 								case SOUTH:
 								player.flip = SDL_FLIP_NONE;
-								player.render(main_game->renderer,cameraX+(pY*20*scale)+(pX*20*scale)+20,cameraY-(pX*10*scale)+(pY*10*scale)-40);
+								player.render(main_game->renderer,cameraX+(pY*20*scale)+(pX*20*scale)+30,cameraY-(pX*10*scale)+(pY*10*scale)-70);
 								break;
 							}
 						}
 						else // moving between floors or loading in/out of dungeon crawling 
 						{
-							player.render(main_game->renderer,cameraX+(pY*20*scale)+(pX*20*scale)+20,cameraY-(pX*10*scale)+(pY*10*scale)-40 + moveAnimation);					
+							player.render(main_game->renderer,cameraX+(pY*20*scale)+(pX*20*scale)+30,cameraY-(pX*10*scale)+(pY*10*scale)-70 + moveAnimation);					
 							
 							if(!newGame)
 							{
@@ -172,8 +182,79 @@ class dungeon_crawling : public system_handler
 							}	
 						}
 					}
+					else // other party members 
+					{
+						for(int i=0;i<numParty-1;i++)
+						{
+							if(partCoords[i][0] == x && partCoords[i][1] == y)
+							{
+								switch(i)
+								{
+									case 0:
+									player.setColor(255,0,0);
+									b_player.setColor(255,0,0);
+									case 1:
+									player.setColor(0,255,0);
+									b_player.setColor(0,255,0);
+									case 2:
+									player.setColor(0,0,255);
+									b_player.setColor(0,0,255);
+									break;
+								}
+								// display player 
+								if(!loadIn && !switchOut) // if everything is loaded in
+								{
+									switch(partFace[i])
+									{
+										case NORTH:
+										b_player.flip = SDL_FLIP_HORIZONTAL;
+										b_player.render(main_game->renderer,cameraX+(partCoords[i][1]*20*scale)+(partCoords[i][0]*20*scale)+30,cameraY-(partCoords[i][0]*10*scale)+(partCoords[i][1]*10*scale)-70);
+										break;
+										case EAST:
+										b_player.flip = SDL_FLIP_NONE;
+										b_player.render(main_game->renderer,cameraX+(partCoords[i][1]*20*scale)+(partCoords[i][0]*20*scale)+30,cameraY-(partCoords[i][0]*10*scale)+(partCoords[i][1]*10*scale)-70);
+										break;
+										case WEST:
+										player.flip = SDL_FLIP_HORIZONTAL;
+										player.render(main_game->renderer,cameraX+(partCoords[i][1]*20*scale)+(partCoords[i][0]*20*scale)+30,cameraY-(partCoords[i][0]*10*scale)+(partCoords[i][1]*10*scale)-70);
+										break;
+										case SOUTH:
+										player.flip = SDL_FLIP_NONE;
+										player.render(main_game->renderer,cameraX+(partCoords[i][1]*20*scale)+(partCoords[i][0]*20*scale)+30,cameraY-(partCoords[i][0]*10*scale)+(partCoords[i][1]*10*scale)-70);
+										break;
+									}
+								}
+								else // moving between floors or loading in/out of dungeon crawling 
+								{
+									player.render(main_game->renderer,cameraX+(partCoords[i][1]*20*scale)+(partCoords[i][0]*20*scale)+30,cameraY-(partCoords[i][0]*10*scale)+(partCoords[i][1]*10*scale)-70+ moveAnimation);
+
+									if(!newGame)
+									{
+										switch(up)
+										{
+											case true:
+											moveAnimation-=10;
+											break;
+											case false:
+											moveAnimation+=10;
+											break;
+										}
+									}	
+								}
+								break;
+							}
+						}
+						player.setColor(255,255,255);
+						b_player.setColor(255,255,255);		
+					}
 				}	
 			}	
+			
+			// displaying dialogue
+			if(dialogue)
+			{
+				textbackground.render(main_game->renderer,25,500);
+			}
 			
 			// loading into new floor
 			if(loadIn && megaAlpha == 255)
@@ -187,6 +268,7 @@ class dungeon_crawling : public system_handler
 				{
 					movableEnemies[i] = false;
 					
+					// generate starting coords 
 					while(movableEnemies[i] == false)
 					{
 						coords[i][0] = rand()%(max_x-2)+1;
@@ -205,6 +287,12 @@ class dungeon_crawling : public system_handler
 				switchOut = false;
 				loadIn = true;
 				
+				// change floor 
+				if(map[pZ][pY][pX] == '2')
+					pZ++;
+				else if(map[pZ][pY][pX] == '3')
+					pZ--;
+					
 				// clear current enemies 
 				for(int i=0;i<10;i++)
 				{
@@ -215,8 +303,22 @@ class dungeon_crawling : public system_handler
 			}
 			else if(switchOut)
 				megaAlpha-=5;
-			
-			
+		}
+		
+		void partyMovementUpdate()
+		{
+			if(numParty > 1)
+			{
+				for(int i=numParty-2;i>=1;i--)
+				{
+					partFace[i] = partFace[i-1];
+					partCoords[i][1] = partCoords[i-1][1]; 
+					partCoords[i][0] = partCoords[i-1][0];
+				}	
+				partFace[0] = direction;
+				partCoords[0][1] = pY;
+				partCoords[0][0] = pX;			
+			}
 		}
 		
 		// input handling
@@ -226,78 +328,106 @@ class dungeon_crawling : public system_handler
 			{
 				for(int i=0;i<numEnemies;i++)
 				{
-					if(coords[i][1] == pY && coords[i][0] == pX)
+					// start battle if enemy on player coord
+					if(movableEnemies[i] && coords[i][1] == pY && coords[i][0] == pX)
+					{
 						movableEnemies[i] = false;
+						endSystemHandler(); 
+					}
 				}
-				
+						
 				switch(main_game->input.state)
 				{
 					case UP:
+					direction = NORTH;
 					if((pY != 1) && (map[pZ][pY-1][pX] != '0'))
 					{
+						partyMovementUpdate();
 						pY--;
-						direction = NORTH;
 					}
 					break;
 					case LEFT:
+					direction = WEST;
 					if((pX != 0) && (map[pZ][pY][pX-1] != '0'))
 					{
+						partyMovementUpdate();
 						pX--;
-						direction = WEST;
 					}
 					break;
 					case RIGHT:
+					direction = EAST;
 					if((pX != max_x-1) && (map[pZ][pY][pX+1] != '0'))
 					{
+						partyMovementUpdate();
 						pX++;
-						direction = EAST;
 					}
 					break;
 					case DOWN:
+					direction = SOUTH;
 					if((pY != max_y-1) && (map[pZ][pY+1][pX] != '0'))
 					{
+						partyMovementUpdate();
 						pY++;
-						direction = SOUTH;
 					}
 					break;
 					case SELECT:
+					dialogue = !dialogue;
+					main_game->switchBackground(0);
+					break;
+					case CANCEL:
+					main_game->switchBackground(3);
 					break;
 				}
+				// checks what tile the player is on 
 				switch(map[pZ][pY][pX])
 				{
 					case '2':
+					Mix_PlayChannel(0,moverSound,0);
 					up = true;
 					switchOut = true;
-					pZ++;
 					moveAnimation = 0;
 					break;
 					case '3':
+					Mix_PlayChannel(0,moverSound,0);
 					up = false;
 					switchOut = true;
-					pZ--;
-				    moveAnimation = 0;
+					moveAnimation = 0;
 					break;
 				}
 			
-				if(moveEnemyTimer.getTicks()/1000 >= 0.1) // move enemies after (number on the right) seconds
+				// move enemies after (number on the right) seconds
+				if(!dialogue && moveEnemyTimer.getTicks()/1000 >= 0.1) 
 				{
 					int addX, addY;
 			
 					moveEnemyTimer.stop();
 					for(int i=0;i<numEnemies;i++)
 					{
-						addX = rand()%3-1;
-						addY = rand()%3-1;
-						if(coords[i][1]+addY == max_y-1 || coords[i][1]+addY == 1)
-							addY = 0;
-						if(coords[i][0]+addX == max_x-1 || coords[i][0]+addX == 0)
-							addX = 0;
-							
-						if(map[pZ][coords[i][1]+addY][coords[i][0]+addX] != '0')
+						if(movableEnemies[i])
 						{
-							if(coords[i][1]+addY >= 1)
+							addX = 0;
+							addY = 0;
+							if(coords[i][1] < pY)
+								addY = 1;
+							else if(coords[i][1] > pY)
+								addY = -1;
+							
+							if(coords[i][0] <= pX)
+								addX = 1;
+							else if(coords[i][0] >= pX)
+								addX = -1;
+						
+							// checks if new spot is valid 
+							if(coords[i][1]+addY == max_y-1 || coords[i][1]+addY <= 1)
+								addY = 0;
+							if(coords[i][0]+addX == max_x-1 || coords[i][0]+addX <= 0)
+								addX = 0;
+							
+							if(map[pZ][coords[i][1]+addY][coords[i][0]+addX] != '0')
+							{
 								coords[i][1]+=addY;
-							coords[i][0]+=addX;
+								coords[i][0]+=addX;
+							}
 						}
 					}
 					moveEnemyTimer.start();	
@@ -306,6 +436,9 @@ class dungeon_crawling : public system_handler
 		}
 	
 	private:
+		// is there dialogue happening?
+		bool dialogue = false;
+	
 		// enemy handling 
 		timer moveEnemyTimer; // for moving enemies without input 
 		image enemy;
@@ -337,15 +470,19 @@ class dungeon_crawling : public system_handler
 		
 		// player coords
 		int pX = 0;
-		int pY = 1;
+		int pY = 4;
 		int pZ = 0;
+		
+		// party member coordinates;
+		int partCoords[3][2];
+		facing partFace[3];
 		
 		// camera variables
 		int cameraX = 400;
 		int cameraY = 300;
 		
 		// scale of images
-		int scale = 2;
+		int scale = 3;
 		
 		// image of dungeon blocks
 		image brick;  
@@ -354,7 +491,12 @@ class dungeon_crawling : public system_handler
 		image player; 
 		image b_player;
 		
+		// text background
+		image textbackground;
+		
 		// the direction the player is facing 
 		facing direction = SOUTH;
 	
+		// going up/down floor sound effect
+		Mix_Chunk * moverSound = Mix_LoadWAV("resources/music/sounds/moving_floors.wav"); 
 };

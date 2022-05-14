@@ -10,9 +10,10 @@ class title_screen : public system_handler
 		title_screen(game_handler * g)
 		{
 			main_game = g;
-			test = image("resources/sprites/kid.png",g->renderer);
-			test2 = image("resources/sprites/stone_crawler.png",g->renderer);
-			test_logo = image("resources/sprites/logo.png",g->renderer);
+			main_game->loadIn = false;
+			test = image("resources/sprites/title_screen/kid.png",g->renderer);
+			test2 = image("resources/sprites/title_screen/stone_crawler.png",g->renderer);
+			test_logo = image("resources/sprites/title_screen/logo.png",g->renderer);
 			
 			megaAlpha = 0;
 			
@@ -38,7 +39,10 @@ class title_screen : public system_handler
 				if(loadIn && megaAlpha == 255)
 				{
 					if(loadMonster)
+					{
+						main_game->switchBackground(0);
 						loadedMonster = true;
+					}
 					loadIn = false;
 					kidLoaded = true;
 					switchOut = true;
@@ -57,7 +61,7 @@ class title_screen : public system_handler
 			else
 			{
 				main_game->displayText.display("New Game",600,520,angleSelect[0]);
-				main_game->displayText.display("Continue",600,590,angleSelect[1]);
+				main_game->displayText.display("Continue",600,560,angleSelect[1]);
 			}
 		}		
 	
@@ -88,10 +92,8 @@ class title_screen : public system_handler
 			}
 			
 		}
-	
 		// option on the title screen
 		int option = 0;
-		
 	private:
 		// for spinning the current selected option
 		int angleSelect[2] = {0,0};

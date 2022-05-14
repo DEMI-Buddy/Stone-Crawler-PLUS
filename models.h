@@ -70,7 +70,7 @@ class stats
 				
 				portCoords[0] = 67;
 				portCoords[1] = 226;
-				sprite = image("resources/sprites/Monster/kid.png",g);
+				sprite = image("resources/sprites/battle/Monster/kid.png",g);
 				
 				abilities[0] = {SLASH, "Slash"};
 				abilities[1] = {PIERCE, "Pierce"};
@@ -97,7 +97,7 @@ class stats
 				
 				portCoords[0] = 20;
 				portCoords[1] = 33;
-				sprite = image("resources/sprites/Monster/Cobol.png",g);
+				sprite = image("resources/sprites/battle/Monster/Cobol.png",g);
 				
 				abilities[0] = {SLASH, "Slash"};
 				
@@ -121,7 +121,7 @@ class stats
 				
 				portCoords[0] = 33;
 				portCoords[1] = 93;
-				sprite = image("resources/sprites/Monster/Tinker Toy.png",g);
+				sprite = image("resources/sprites/battle/Monster/Tinker Toy.png",g);
 				
 				abilities[0] = {SPELL, "Spirit"};
 				
@@ -129,7 +129,7 @@ class stats
 				break;
 				
 				case LOATING:
-				maxHealth = rand()%20+15;
+				maxHealth = rand()%5+7;
 				maxStamina = rand()%17+5;
 			
 				maxStr = rand()%10+1;
@@ -145,7 +145,7 @@ class stats
 				
 				portCoords[0] = 93;
 				portCoords[1] = 123;
-				sprite = image("resources/sprites/Monster/Loating.png",g);
+				sprite = image("resources/sprites/battle/Monster/Loating.png",g);
 				
 				abilities[0] = {SPELL, "Spirit"};
 				
@@ -169,7 +169,7 @@ class stats
 				
 				portCoords[0] = 123;
 				portCoords[1] = 63;
-				sprite = image("resources/sprites/Monster/Traotic.png",g);
+				sprite = image("resources/sprites/battle/Monster/Traotic.png",g);
 				
 				abilities[0] = {SPELL, "Spirit"};
 				abilities[1] = {SLASH, "Slash"};
@@ -193,7 +193,7 @@ class stats
 				
 				portCoords[0] = 0;
 				portCoords[1] = 0;
-				sprite = image("resources/sprites/Monster/stranjer.png",g);
+				sprite = image("resources/sprites/battle/Monster/stranjer.png",g);
 				
 				abilities[0] = {SPELL, "Spirit"};
 				abilities[1] = {SLASH, "Slash"};

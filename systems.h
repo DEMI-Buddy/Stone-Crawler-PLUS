@@ -29,6 +29,7 @@
 #include <utility>
 #include <fstream>
 #include <math.h>
+#include <time.h>
 using namespace std;
 
 //Screen dimension constants
@@ -127,7 +128,7 @@ class timer
 };
 
 // starting render font size of text
-#define START_SIZE 50
+#define START_SIZE 35
 
 // class for text handling 
 class text 
@@ -175,7 +176,7 @@ class text
 			switch(type)
 			{
 				case 1:
-				font = TTF_OpenFont("resources/fonts/Dotty.ttf",32);
+				font = TTF_OpenFont("resources/fonts/Dotty.ttf",START_SIZE);
 				break;
 				default:
 				font = TTF_OpenFont("resources/fonts/chiaro.ttf",START_SIZE);
@@ -628,12 +629,14 @@ class game_handler
 		// variables for animation when loading assets onto the screen 
 		bool loadIn = false;
 		
+		// variables for animation when switching out background assets
+		bool switchOut = false;
+		
 	private:
 		// used for background assets with rendering sections 
 		SDL_Rect renderRect;
 		
-		// variables for animation when switching out background assets
-		bool switchOut = false;
+		// what background to switch to if switchOut = true
 		int switchTo = 0;
 	
 		// alpha for assets
@@ -641,6 +644,9 @@ class game_handler
 		
 		// movement of background assets 
 		bool down = true;
+		
+		// some backgrounds are different even if they're the same type
+		int back_type = 0;
 		
 		int b = 0; // background type 
 		

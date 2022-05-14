@@ -70,8 +70,8 @@ void game_handler::loadBackground(int type)
 	{
 		case 0:
 		background_assets = new image[2];
-		background_assets[0] = image("resources/sprites/background_asset2.png",renderer);
-		background_assets[1] = image("resources/sprites/background_asset1.png",renderer);
+		background_assets[0] = image("resources/sprites/background/background_asset2.png",renderer);
+		background_assets[1] = image("resources/sprites/background/background_asset1.png",renderer);
 		background_assets[1].scale = 5;
 		background_assets[0].scale = 3;	
 		background_assets[1].setAlpha(0);
@@ -80,10 +80,17 @@ void game_handler::loadBackground(int type)
 		case 1:
 		break;
 		case 3:
+		back_type = rand()%3+1;
+		background_assets = new image[1];
+		background_assets[0] = image("resources/sprites/background/background_asset3.png",renderer);
+		background_assets[0].scale = 3;
+		background_assets[0].setAlpha(0);
+		break;
+		case 5:
 		background_assets = new image[3];
-		background_assets[0] = image("resources/sprites/2_background_asset.png",renderer);
-		background_assets[1] = image("resources/sprites/2_background_asset_2.png",renderer);
-		background_assets[2] = image("resources/sprites/theslayer.png",renderer);
+		background_assets[0] = image("resources/sprites/background/2_background_asset.png",renderer);
+		background_assets[1] = image("resources/sprites/background/2_background_asset_2.png",renderer);
+		background_assets[2] = image("resources/sprites/background/theslayer.png",renderer);
 		
 		background_assets[1].scale = 3;
 		background_assets[0].scale = 3;	
@@ -162,11 +169,68 @@ void game_handler::background(bool down)
 		break;
 		
 		case 2: // black background 
-		colors[0] = 0;
-		colors[1] = 0;
-		colors[2] = 0;
+		
+		if(!loadIn && !switchOut)
+		{
+			colors[0] = 0;
+			colors[1] = 0;
+			colors[2] = 0;
+			displayText.textColor.a = 255;
+		}
+		else if(loadIn)
+		{
+			if(colors[0] > 0)
+				colors[0] = colors[0] - 1;
+			if(colors[1] > 0)
+				colors[1] = colors[1] - 1;
+			if(colors[2] > 0)
+				colors[2] = colors[2] - 1;
+		}
 		break;
 		
+		case 3: // purple words 
+		if(down && colors[0] != 0)
+			colors[0] = (colors[0] - 1);
+		else if(colors[0] != 255)
+			colors[0] = (colors[0] + 1);
+				
+		if (colors[1] > 0)
+			colors[1] = colors[1] - 1;
+			
+		if (colors[2] < 92)
+			colors[2] = colors[2] + 1;
+		else if(colors[2] > 92)
+			colors[2] = colors[2] - 1;
+		
+		if(loadIn || switchOut)
+		{
+			background_assets[0].setAlpha(megaAlpha);
+			displayText.textColor.a = megaAlpha;
+		}
+		background_assets[0].angle = ((((int)background_assets[0].angle + 1)%360)*60/SCREEN_FPS);
+		for(int i=0;i<8;i++)
+		{
+			switch(back_type)
+			{
+				default:
+				case 1:
+				displayText.display("i  t urnsidewaystothesun",10,10+i*90,colors[0]);
+				displayText.display("keepmythoughtsfromeveryo n  e",200,30+i*90,colors[0]+i);
+				break;
+				case 2:
+				displayText.display("Afriendissomeonewhoisneverfar",10,10+i*90,colors[0]);
+				displayText.display("Noneversofaratall",200,30+i*90,colors[0]+i);
+				break;
+				case 3:
+				displayText.display("Tocarryon,we'llcarryon",10,10+i*90,colors[0]);
+				displayText.display("Andthoughyou'redeadandgone,believeme",200,30+i*90,colors[0]+i);
+				break;
+			}
+			background_assets[0].setColor(155-i*10,100,155-i*50);
+			background_assets[0].render(renderer,50+90*i,300);
+		}
+		
+		break;
 		case 4: // white background 
 		if(switchOut)
 		{
@@ -183,7 +247,7 @@ void game_handler::background(bool down)
 		colors[2] = 255;
 		break;
 		
-		case 3: // battle screen 
+		case 5: // battle screen 
 		colors[0] = 61;
 		colors[1] = 0;
 		colors[2] = 92;
